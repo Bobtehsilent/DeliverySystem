@@ -6,10 +6,14 @@ class Package:
         self.deadline = deadline
 
     def calculate_penalty(self):
-        """Beräknar straffavgiften om deadline är passerad."""
+        """Beräknar straffavgiften för leveransförsening"""
         if self.deadline < 0:
             return -(self.deadline ** 2)
         return 0
     
+    def effective_profit(self):
+        """Beräknar effektiv förtjänst efter straffavgift"""
+        return self.profit + self.calculate_penalty()
+
     def __repr__(self):
-        return f'Package({self.id}, {self.weight}, {self.profit}, {self.deadline})'
+            return f"Package({self.id}, Weight: {self.weight}, Profit: {self.profit}, Deadline: {self.deadline})"

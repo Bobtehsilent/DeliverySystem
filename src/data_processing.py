@@ -9,7 +9,6 @@ def load_data(file_path):
     try:
         df = pd.read_csv(file_path)
         packages = [Package(row['paket_id'], row['vikt'], row['fortjanst'], row['deadline']) for index, row in df.iterrows()]
-        print(packages)
         return packages
     except FileNotFoundError:
         print(f'File not found: {file_path}')
@@ -18,7 +17,6 @@ def load_data(file_path):
         save_to_csv(data, output_file)
         df = pd.read_csv(file_path)
         packages = [Package(row['paket_id'], row['vikt'], row['fortjanst'], row['deadline']) for index, row in df.iterrows()]
-        print(packages)
         return packages
 
 def validate_data(packages):
