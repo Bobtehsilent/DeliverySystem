@@ -17,10 +17,8 @@ class Truck:
     
     def get_total_profit(self):
         """Totala förtjänsten inklusive straffavgifter."""
-        return sum(p.effective_profit() for p in self.packages)
-    
-    def __repr__(self):
-        return f"Truck({self.id}, Total Weight: {self.get_total_weight()}, Packages: {len(self.packages)})"
+        total_profit = sum(p.effective_profit() for p in self.packages)
+        return total_profit
     
     def __repr__(self):
         return f"Truck({self.id}, Total Weight: {self.get_total_weight()}, Packages: {len(self.packages)})"

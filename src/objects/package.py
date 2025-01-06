@@ -13,7 +13,10 @@ class Package:
     
     def effective_profit(self):
         """Beräknar effektiv förtjänst efter straffavgift"""
-        return self.profit + self.calculate_penalty()
+        penalty = self.calculate_penalty()
+        effective = self.profit + penalty
+        return effective
+
 
     def __repr__(self):
             return f"Package({self.id}, Weight: {self.weight}, Profit: {self.profit}, Deadline: {self.deadline})"

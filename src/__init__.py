@@ -7,7 +7,7 @@ def main():
         print("Inga paket att optimera.")
         return
 
-    optimizer = Optimizer(packages, max_trucks=20, max_capacity=800)
+    optimizer = Optimizer(packages, max_trucks=5, max_capacity=800)
     optimizer.distribute_packages()
     optimizer.display_results()
 
