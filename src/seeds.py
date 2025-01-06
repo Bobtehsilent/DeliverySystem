@@ -1,29 +1,32 @@
-import random
 import csv
-from src.objects.package import Package
+import random
+from pathlib import Path
 
-output_file = 'data/lagerstatus.csv'
+def seed_packages(n_iter: int = 10000, target_path: Path = Path('data/lagerstatus.csv')) -> None:
+    assert 0 < n_iter, 'n_iter needs to be a positive integer'
+    assert n_iter < 9_000_000_000, 'n_iter needs to be less than 9 billion'
 
-def generate_lagerstatus(num_paket:int=500):
-    packages = []
-    for _ in range(num_paket):
-        paket_id = random.randint(1_000_000, 9_999_999)
-        vikt = round(random.uniform(0.1, 20), 2)
-        förtjänst = random.randint(1, 10)
-        deadline = random.randint(-5, 10)
-        package = Package(paket_id, vikt, förtjänst, deadline)
-        packages.append(package)
+    entries = []
+    id_num = random.randint(1_000_000_000, 9_999_999_999 - n_iter)
+    for _ in range(n_iter):
+        id_num += 1
+        weight = round((random.randint(10, 150) + random.randint(10, 80)) / 20, 1)
+        profit = int((random.randint(1, 10) + random.randint(1, 10)) / 2)
+        deadline = int((random.randint(-1, 7) + random.randint(-3, 3)) / 2)
+        entries.append(
+            {
+                'Paket_id': id_num,
+                'Vikt': weight,
+                'Förtjänst': profit,
+                'Deadline': deadline
+            }
+        )
 
-    return packages
-
-def save_to_csv(packages, file_name):
-    with open(file_name, 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['paket_id', 'vikt', 'fortjanst', 'deadline'])
-        for package in packages:
-            writer.writerow([package.id, package.weight, package.profit, package.deadline])
+    fieldnames = 'Paket_id','Vikt','Förtjänst','Deadline'
+    with target_path.open('w', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames, lineterminator='\n')
+        writer.writeheader()
+        writer.writerows(entries)
 
 if __name__ == '__main__':
-    data = generate_lagerstatus()
-    save_to_csv(data, output_file)
-    print(f'Generated {len(data)} rows and saved to {output_file}')
+    seed_packages()

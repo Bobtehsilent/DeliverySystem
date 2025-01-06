@@ -1,6 +1,6 @@
 import pandas as pd
 from src.objects.package import Package
-from src.seeds import generate_lagerstatus, save_to_csv
+from src.seeds import seed_packages
 
 output_file = 'data/lagerstatus.csv'
 
@@ -8,15 +8,14 @@ def load_data(file_path):
     """Läs in lagerstatus.csv och returnera en lista av Package objekt"""
     try:
         df = pd.read_csv(file_path)
-        packages = [Package(row['paket_id'], row['vikt'], row['fortjanst'], row['deadline']) for index, row in df.iterrows()]
+        packages = [Package(row['Paket_id'], row['Vikt'], row['Förtjänst'], row['Deadline']) for index, row in df.iterrows()]
         return packages
     except FileNotFoundError:
         print(f'File not found: {file_path}')
         print('Seeding data...')
-        data = generate_lagerstatus()
-        save_to_csv(data, output_file)
+        seed_packages(n_iter=100, target_path=output_file)
         df = pd.read_csv(file_path)
-        packages = [Package(row['paket_id'], row['vikt'], row['fortjanst'], row['deadline']) for index, row in df.iterrows()]
+        packages = [Package(row['Paket_id'], row['Vikt'], row['Förtjänst'], row['Deadline']) for index, row in df.iterrows()]
         return packages
 
 def validate_data(packages):

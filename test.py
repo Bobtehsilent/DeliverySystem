@@ -27,7 +27,7 @@ test_packages = [
 
 truck = Truck(1)
 truck.add_package(Package(1, 300, 10, 2))  # Levereras i tid
-truck.add_package(Package(2, 200, 8, -1))  # Deadline missad
+truck.add_package(Package(2, 500, 8, -1))  # Deadline missad
 truck.add_package(Package(3, 200, 6, -3))  # Deadline missad
 
 for package in truck.packages:

@@ -3,3 +3,8 @@ env/
 .env/
 venv/
 .venv/
+lagerstatus.csv
+test_data.csv
+test.py
+logs/
+test.py
