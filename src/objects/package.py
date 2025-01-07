@@ -16,7 +16,17 @@ class Package:
         penalty = self.calculate_penalty()
         effective = self.profit + penalty
         return effective
+    
+    def priority_score(self):
+        """Beräkna ett prioriteringsvärde för paket baserat på profit, vikt och deadline."""
+        if self.deadline < 0: 
+            lateness_factor = 2
+        elif self.deadline == 0:
+            lateness_factor = 1.5
+        else:
+            lateness_factor = 1
 
+        return (self.profit / self.weight) * lateness_factor
 
     def __repr__(self):
             return f"Package({self.id}, Weight: {self.weight}, Profit: {self.profit}, Deadline: {self.deadline})"

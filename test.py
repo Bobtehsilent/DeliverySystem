@@ -16,22 +16,30 @@ from src.objects.optimizer import Optimizer
 # optimizer = Optimizer(test_packages, max_trucks=2, max_capacity=800)
 # optimizer.distribute_packages()
 # optimizer.display_results()
-test_packages = [
-    Package(1, 300, 10, 2),   # Levereras i tid
-    Package(2, 500, 8, -1),  # Deadline missad med 1 dag
-    Package(3, 400, 6, -3),  # Deadline missad med 3 dagar
-]
+# test_packages = [
+#     Package(1, 300, 10, 2),   # Levereras i tid
+#     Package(2, 500, 8, -1),  # Deadline missad med 1 dag
+#     Package(3, 400, 6, -3),  # Deadline missad med 3 dagar
+# ]
 
-# for p in test_packages:
-#     print(p.effective_profit())
+# # for p in test_packages:
+# #     print(p.effective_profit())
 
-truck = Truck(1)
-truck.add_package(Package(1, 300, 10, 2))  # Levereras i tid
-truck.add_package(Package(2, 500, 8, -1))  # Deadline missad
-truck.add_package(Package(3, 200, 6, -3))  # Deadline missad
+# truck = Truck(1)
+# truck.add_package(Package(1, 300, 10, 2))  # Levereras i tid
+# truck.add_package(Package(2, 500, 8, -1))  # Deadline missad
+# truck.add_package(Package(3, 200, 6, -3))  # Deadline missad
 
-for package in truck.packages:
-    print(package)
+# for package in truck.packages:
+#     print(package)
 
-print(truck.get_total_profit())
+# print(truck.get_total_profit())
+
+packages = load_data("data/lagerstatus.csv")
+log_file = "logs/optimization.log"
+
+optimizer_genetic = Optimizer(packages, max_trucks=10, max_capacity=800, log_file=log_file)
+optimizer_genetic.genetic_optimization(population_size=10, generations=50, mutation_rate=0.1)
+optimizer_genetic.display_results()
+optimizer_genetic.reset()
 

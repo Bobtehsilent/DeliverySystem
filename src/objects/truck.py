@@ -20,5 +20,14 @@ class Truck:
         total_profit = sum(p.effective_profit() for p in self.packages)
         return total_profit
     
+    def can_fit(self, package):
+        """Kontrollera om ett paket kan passa i bilen utan att överskrida kapaciteten."""
+        return self.get_total_weight() + package.weight <= self.max_capacity
+
+    def prioritize_packages(self):
+        """Prioritera vilka paket som ska behållas baserat på profit/vikt."""
+        self.packages.sort(key=lambda p: p.priority_score(), reverse=True)
+
+    
     def __repr__(self):
         return f"Truck({self.id}, Total Weight: {self.get_total_weight()}, Packages: {len(self.packages)})"
