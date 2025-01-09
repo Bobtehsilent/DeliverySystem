@@ -34,12 +34,13 @@ from src.objects.optimizer import Optimizer
 
 # print(truck.get_total_profit())
 
-packages = load_data("data/lagerstatus1.csv")
+packages = load_data("data/lagerstatus.csv")
 log_file = "logs/optimization.log"
 
 optimizer_genetic = Optimizer(packages, max_trucks=10, max_capacity=800, log_file=log_file)
-optimizer_genetic.optimize(population_size=50, generations=50, mutation_rate=0.3)
+optimizer_genetic.optimize(population_size=20, generations=50, mutation_rate=0.1)
 optimizer_genetic.display_results()
 optimizer_genetic.export_truck_details("data/truck_details.csv")
+optimizer_genetic.analyze_solution()
 
 

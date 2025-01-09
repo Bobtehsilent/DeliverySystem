@@ -28,6 +28,5 @@ class Truck:
         """Prioritera vilka paket som ska behållas baserat på profit/vikt."""
         self.packages.sort(key=lambda p: p.priority_score(), reverse=True)
 
-    
     def __repr__(self):
-        return f"Truck({self.id}, Total Weight: {self.get_total_weight()}, Packages: {len(self.packages)})"
+        return f"Truck({self.id}, Total Weight: {self.get_total_weight():.1f}, Packages: {len(self.packages)})"

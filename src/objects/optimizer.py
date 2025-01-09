@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from src.objects.truck import Truck
 from src.objects.package import Package
+from src.visualization import visualize_histogram, visualize_fitness
 
 class Optimizer:
     def __init__(self, packages, max_trucks=10, max_capacity=800, log_file="logs/optimization.log"):
@@ -20,20 +21,21 @@ class Optimizer:
             return sum(p.calculate_penalty() for p in self.remaining_packages)
 
     def initialize_population(self, population_size):
-        """Skapar en initial population av lösningar."""
+        """Skapar en initial population med mer slumpmässighet."""
         population = []
         for _ in range(population_size):
             solution = []
             available_packages = self.packages[:]
-            random.shuffle(available_packages)
+            random.shuffle(available_packages)  # Slumpmässig start
             for _ in range(self.max_trucks):
                 truck = []
                 weight = 0
                 while available_packages:
-                    package = available_packages.pop()
+                    package = random.choice(available_packages)  # Välj ett slumpmässigt paket
                     if weight + package.weight <= self.max_capacity:
                         truck.append(package)
                         weight += package.weight
+                        available_packages.remove(package)
                     else:
                         break
                 solution.append(truck)
@@ -41,45 +43,85 @@ class Optimizer:
         return population
 
     def fitness(self, individual):
-        """Beräknar fitness som total förtjänst minus straffavgifter."""
+        """Beräknar fitness med en diversitetskomponent."""
         total_profit = sum(
             sum(p.profit for p in truck_packages) for truck_packages in individual
         )
         delivered_packages = [p for truck_packages in individual for p in truck_packages]
         remaining_packages = set(self.packages) - set(delivered_packages)
         total_penalty = sum(p.calculate_penalty() for p in remaining_packages)
-        return total_profit - total_penalty
+
+        # Diversitetskomponent: straffa lösningar där samma paket används ofta
+        diversity_score = len(set(delivered_packages)) / len(delivered_packages) if delivered_packages else 0
+
+        return total_profit - total_penalty + 0.1 * diversity_score  # Justera faktorn 0.1 vid behov
 
     def select_parents(self, population):
-        """Välj de bästa lösningarna som föräldrar."""
-        population.sort(key=self.fitness, reverse=True)
-        return population[:len(population) // 2]
+        """Välj föräldrar med turneringsmetod för lägre selektionspress."""
+        tournament_size = 5  # Öka storleken för att minska selektionspressen
+        parents = []
+        for _ in range(len(population) // 2):
+            candidates = random.sample(population, tournament_size)
+            parent = max(candidates, key=self.fitness)
+            parents.append(parent)
+        return parents
 
     def crossover(self, parent1, parent2):
-        """Kombinerar två lösningar till nya lösningar."""
-        cut1, cut2 = sorted(random.sample(range(len(parent1)), 2))
-        child1 = parent1[:cut1] + parent2[cut1:cut2] + parent1[cut2:]
-        child2 = parent2[:cut1] + parent1[cut1:cut2] + parent2[cut2:]
+        """Kombinerar föräldrar och säkerställer att paket inte dupliceras."""
+        child1, child2 = [], []
+        used_packages_child1 = set()
+        used_packages_child2 = set()
+
+        for truck1, truck2 in zip(parent1, parent2):
+            combined = truck1 + truck2  # Kombinera paket från båda föräldrarna
+            random.shuffle(combined)  # Introducera slumpmässighet
+
+            # Fyll barnens lastbilar baserat på kapacitet
+            truck_child1, truck_child2 = [], []
+            weight1, weight2 = 0, 0
+
+            for package in combined:
+                if package in used_packages_child1 or package in used_packages_child2:
+                    continue  # Hoppa över paket som redan har använts
+                if weight1 + package.weight <= self.max_capacity:
+                    truck_child1.append(package)
+                    weight1 += package.weight
+                    used_packages_child1.add(package)
+                elif weight2 + package.weight <= self.max_capacity:
+                    truck_child2.append(package)
+                    weight2 += package.weight
+                    used_packages_child2.add(package)
+
+            child1.append(truck_child1)
+            child2.append(truck_child2)
+
         return child1, child2
 
     def mutate(self, individual, mutation_rate):
-        """Muterar en lösning med en viss sannolikhet."""
+        """Muterar en lösning för att öka variationen."""
         if random.random() < mutation_rate:
             truck1, truck2 = random.sample(range(len(individual)), 2)
             if individual[truck1] and individual[truck2]:
-                package = individual[truck1].pop()
+                # Flytta ett paket mellan två lastbilar
+                package = individual[truck1].pop(random.randint(0, len(individual[truck1]) - 1))
                 if sum(p.weight for p in individual[truck2]) + package.weight <= self.max_capacity:
                     individual[truck2].append(package)
                 else:
                     individual[truck1].append(package)
+        # Introducera slumpmässig omfördelning av paket inom en lastbil
+        for truck_packages in individual:
+            if random.random() < mutation_rate:
+                random.shuffle(truck_packages)
 
     def optimize(self, population_size=10, generations=50, mutation_rate=0.1):
-        """Kör genetisk algoritm för optimering."""
+        """Genetisk algoritm med elitism."""
         population = self.initialize_population(population_size)
-        stats = []  # To track statistics per generation
+        stats = []
+        best_solution = None
+
         for generation in range(generations):
             population = self.select_parents(population)
-            new_population = []
+            new_population = population[:2]  # Elitism: Behåll de två bästa
             while len(new_population) < population_size:
                 parent1, parent2 = random.sample(population, 2)
                 child1, child2 = self.crossover(parent1, parent2)
@@ -88,17 +130,16 @@ class Optimizer:
                 new_population.extend([child1, child2])
             population = new_population[:population_size]
 
-            # Gather stats for this generation
             best_fitness = max(self.fitness(ind) for ind in population)
             mean_fitness = np.mean([self.fitness(ind) for ind in population])
             stats.append((generation, best_fitness, mean_fitness))
 
-            # Log generation progress
             self.log_progress(generation, best_fitness, mean_fitness)
 
-        self.visualize_stats(stats)
         best_solution = max(population, key=self.fitness)
         self.apply_solution(best_solution)
+
+        return stats, best_solution
 
     def apply_solution(self, solution):
         """Använd en lösning och uppdatera optimizer med jämnare fördelning."""
@@ -119,42 +160,7 @@ class Optimizer:
         print(f"\nTotalt antal paket kvar i lager: {len(self.packages) - sum(len(truck.packages) for truck in self.trucks)}")
         print(f"Total Förtjänst (levererade paket): {total_profit}")
         print(f"Totala Straffavgifter: {total_penalty}")
-
-    def visualize_stats(self, stats):
-        """Visualisera statistik över generationer."""
-        generations, best_fitness, mean_fitness = zip(*stats)
-        plt.plot(generations, best_fitness, label='Bästa Fitness')
-        plt.plot(generations, mean_fitness, label='Genomsnittlig Fitness')
-        plt.xlabel('Generation')
-        plt.ylabel('Fitness')
-        plt.title('Utveckling av Fitness över Generationer')
-        plt.legend()
-        plt.show()
-
-    def analyze_solution(self):
-        """Analysera och visualisera fördelningen av vikt och förtjänst."""
-        truck_weights = [truck.get_total_weight() for truck in self.trucks]
-        truck_profits = [truck.get_total_profit() for truck in self.trucks]
-        
-        # Histogram för vikt och förtjänst
-        plt.hist(truck_weights, bins=10, alpha=0.7, label='Vikt')
-        plt.hist(truck_profits, bins=10, alpha=0.7, label='Förtjänst')
-        plt.xlabel('Värde')
-        plt.ylabel('Antal Lastbilar')
-        plt.title('Histogram för Vikt och Förtjänst')
-        plt.legend()
-        plt.show()
-
-        # Statistik
-        print("--- Statistik för Lastbilar ---")
-        print(f"Medelvikt: {np.mean(truck_weights):.2f}, Varians: {np.var(truck_weights):.2f}, Std Avvikelse: {np.std(truck_weights):.2f}")
-        print(f"Medelförtjänst: {np.mean(truck_profits):.2f}, Varians: {np.var(truck_profits):.2f}, Std Avvikelse: {np.std(truck_profits):.2f}")
-
-
-    def reset(self):
-        """Återställ optimizer till ursprungligt tillstånd."""
-        self.trucks = []
-        self.remaining_packages = []
+        print(f"Actual total profit: {total_profit + total_penalty}")
 
     def log_progress(self, generation, best_fitness, mean_fitness):
         """Logga varje generations framgångar."""
@@ -165,6 +171,17 @@ class Optimizer:
         )
         with open(self.log_file, "a", encoding="utf-8") as log_file:
             log_file.write(log_message)
+
+    def analyze_solution(self):
+        """Analysera och visualisera fördelningen av vikt och förtjänst."""
+        truck_weights = [truck.get_total_weight() for truck in self.trucks]
+        truck_profits = [truck.get_total_profit() for truck in self.trucks]
+
+        visualize_histogram(truck_weights, truck_profits)
+
+        print("--- Statistik för Lastbilar ---")
+        print(f"Medelvikt: {np.mean(truck_weights):.2f}, Varians: {np.var(truck_weights):.2f}, Std Avvikelse: {np.std(truck_weights):.2f}")
+        print(f"Medelförtjänst: {np.mean(truck_profits):.2f}, Varians: {np.var(truck_profits):.2f}, Std Avvikelse: {np.std(truck_profits):.2f}")
 
     def export_truck_details(self, file_name="truck_details.txt"):
         """Exportera detaljer om varje lastbil och dess paket till en textfil."""
