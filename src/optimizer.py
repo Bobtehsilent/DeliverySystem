@@ -11,6 +11,8 @@ import time
 base_dir = os.path.abspath("..") 
 sys.path.append(base_dir)  
 log_file = os.path.join(base_dir, "logs", "optimization.log")
+save_file = os.path.join(base_dir, "results", "solution.txt")
+
 class Optimizer:
     def __init__(self, packages, max_trucks=10, max_capacity=800, log_file=log_file):
         self.packages = sorted(packages, key=lambda p: (p.profit / p.weight, p.deadline), reverse=True)
@@ -196,6 +198,9 @@ class Optimizer:
         print(f"Total Förtjänst (levererade paket): {total_profit}")
         print(f"Totala Straffavgifter: {total_penalty}")
         print(f"Actual total profit: {total_profit + total_penalty}")
+
+    def save_results(self, file_name="solution.txt"):
+        pass
 
     def log_progress(self, generation, best_fitness, mean_fitness, run_id):
         """Logga varje generations framgångar med löpande körnings-ID."""

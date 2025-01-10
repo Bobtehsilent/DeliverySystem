@@ -3,7 +3,7 @@
 from src.data_processing import load_data
 from src.objects.package import Package
 from src.objects.truck import Truck
-from src.objects.optimizer import Optimizer
+from src.optimizer import Optimizer
 from src.visualization import visualize_logs
 # test_packages = [
 #     Package(1, 300, 10, 2),   # Levereras i tid

@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from src.objects.package import Package
-from src.objects.optimizer import Optimizer
+from src.optimizer import Optimizer
 
 base_dir = os.path.abspath("..")  # En nivå upp från notebooks/
 sys.path.append(base_dir)  # Lägg till base_dir i sys.path
