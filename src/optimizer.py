@@ -14,11 +14,11 @@ log_file = os.path.join(base_dir, "logs", "optimization.log")
 save_file = os.path.join(base_dir, "results", "solution.txt")
 
 class Optimizer:
+    """Min genetiska algoritm optimizer klass för att maximera förtjänst."""
     def __init__(self, packages, max_trucks=10, max_capacity=800, log_file=log_file):
         self.packages = sorted(packages, key=lambda p: (p.profit / p.weight, p.deadline), reverse=True)
         self.max_trucks = max_trucks
         self.max_capacity = max_capacity
-        # Set log file path
         self.log_file = log_file or os.path.join(os.getcwd(), "logs", "optimization.log")
         os.makedirs(os.path.dirname(self.log_file), exist_ok=True)  
 
@@ -27,21 +27,21 @@ class Optimizer:
         return sum(truck.get_total_profit() for truck in self.trucks)
 
     def calculate_total_penalty(self):
-            """Totala straffavgifter för kvarvarande paket."""
-            return sum(p.calculate_penalty() for p in self.remaining_packages)
+        """Totala straffavgifter för kvarvarande paket."""
+        return sum(p.calculate_penalty() for p in self.remaining_packages)
 
     def initialize_population(self, population_size):
-        """Skapar en initial population med mer slumpmässighet."""
+        """Skapar en initial population med en hel del slumpmässighet."""
         population = []
         for _ in range(population_size):
             solution = []
             available_packages = self.packages[:]
-            random.shuffle(available_packages)  # Slumpmässig start
+            random.shuffle(available_packages) 
             for _ in range(self.max_trucks):
                 truck = []
                 weight = 0
                 while available_packages:
-                    package = random.choice(available_packages)  # Välj ett slumpmässigt paket
+                    package = random.choice(available_packages) 
                     if weight + package.weight <= self.max_capacity:
                         truck.append(package)
                         weight += package.weight
@@ -61,14 +61,13 @@ class Optimizer:
         remaining_packages = set(self.packages) - set(delivered_packages)
         total_penalty = sum(p.calculate_penalty() for p in remaining_packages)
 
-        # Diversitetskomponent: straffa lösningar där samma paket används ofta
         diversity_score = len(set(delivered_packages)) / len(delivered_packages) if delivered_packages else 0
 
-        return (total_profit - total_penalty + 0.1 * diversity_score)  # Justera faktorn 0.1 vid behov
+        return (total_profit - total_penalty + 0.1 * diversity_score)
 
     def select_parents(self, population):
         """Välj föräldrar med turneringsmetod för lägre selektionspress."""
-        tournament_size = 5  # Öka storleken för att minska selektionspressen
+        tournament_size = 5 
         parents = []
         for _ in range(len(population) // 2):
             candidates = random.sample(population, tournament_size)
@@ -83,16 +82,15 @@ class Optimizer:
         used_packages_child2 = set()
 
         for truck1, truck2 in zip(parent1, parent2):
-            combined = truck1 + truck2  # Kombinera paket från båda föräldrarna
-            random.shuffle(combined)  # Introducera slumpmässighet
+            combined = truck1 + truck2  
+            random.shuffle(combined) 
 
-            # Fyll barnens lastbilar baserat på kapacitet
             truck_child1, truck_child2 = [], []
             weight1, weight2 = 0, 0
 
             for package in combined:
                 if package in used_packages_child1 or package in used_packages_child2:
-                    continue  # Hoppa över paket som redan har använts
+                    continue  
                 if weight1 + package.weight <= self.max_capacity:
                     truck_child1.append(package)
                     weight1 += package.weight
@@ -112,31 +110,33 @@ class Optimizer:
         if random.random() < mutation_rate:
             truck1, truck2 = random.sample(range(len(individual)), 2)
             if individual[truck1] and individual[truck2]:
-                # Flytta ett paket mellan två lastbilar
                 package = individual[truck1].pop(random.randint(0, len(individual[truck1]) - 1))
                 if sum(p.weight for p in individual[truck2]) + package.weight <= self.max_capacity:
                     individual[truck2].append(package)
                 else:
                     individual[truck1].append(package)
-        # Introducera slumpmässig omfördelning av paket inom en lastbil
         for truck_packages in individual:
             if random.random() < mutation_rate:
                 random.shuffle(truck_packages)
 
-    def optimize(self, population_size=10, generations=50, initial_mutation_rate=0.05, patience=5, mutation_increase=0.05):
+    def optimize(self, population_size=10, generations=50, 
+                initial_mutation_rate=0.05, patience=5, mutation_increase=0.05, 
+                run_id=None, log_window=None):
         """Genetisk algoritm med elitism och stoppkriterium för stagnation och dynamisk mutation."""
-        run_id = random.randint(1, 9999)  # Generera unikt run_id här
+    
+        if run_id is None:
+            run_id = random.randint(1, 9999)
+
         population = self.initialize_population(population_size)
         stats = []
         best_solution = None
-        stagnation_counter = 0  # Räknare för generationer utan förbättring
-        last_best_fitness = None  # Senast observerade bästa fitness
-        last_mean_fitness = None  # Senast observerade genomsnittliga fitness
-        mutation_rate = initial_mutation_rate  # Startvärde för mutation rate
+        stagnation_counter = 0
+        last_best_fitness = None
+        mutation_rate = initial_mutation_rate
 
         for generation in range(generations):
             population = self.select_parents(population)
-            new_population = population[:2]  # Elitism: Behåll de två bästa
+            new_population = population[:2]
             while len(new_population) < population_size:
                 parent1, parent2 = random.sample(population, 2)
                 child1, child2 = self.crossover(parent1, parent2)
@@ -145,38 +145,38 @@ class Optimizer:
                 new_population.extend([child1, child2])
             population = new_population[:population_size]
 
-            # Beräkna fitness
             best_fitness = max(self.fitness(ind) for ind in population)
             mean_fitness = np.mean([self.fitness(ind) for ind in population])
             stats.append((generation, best_fitness, mean_fitness))
 
-            # Logga framgång
-            self.log_progress(generation, best_fitness, mean_fitness, run_id=run_id)
+            self.log_progress(generation, best_fitness, mean_fitness, run_id=run_id, log_window=log_window)
 
-            # Kontrollera om fitness har stagnerat
+            if log_window:
+                log_window.update_progress(generation)
+
             if best_fitness == last_best_fitness:
                 stagnation_counter += 1
                 if stagnation_counter >= patience:
-                    mutation_rate += mutation_increase  # Öka mutation rate
-                    stagnation_counter = 0  # Återställ räknaren
+                    mutation_rate += mutation_increase
+                    stagnation_counter = 0
             else:
-                stagnation_counter = 0  # Återställ räknaren vid förbättring
-                mutation_rate = initial_mutation_rate  # Återställ mutation rate vid förändring
+                stagnation_counter = 0
+                mutation_rate = initial_mutation_rate
 
             last_best_fitness = best_fitness
-            last_mean_fitness = mean_fitness
 
-            # Stoppkriterium: Avbryt om maximal generationsgräns uppnås
             if stagnation_counter >= patience:
-                print(f"Optimeringen stoppas vid generation {generation} efter {patience} generationer av stagnation.")
+                if log_window:
+                    log_window.append_log(f"Stopping early at generation {generation} due to stagnation.")
                 break
 
-        # Hitta och applicera bästa lösningen
         best_solution = max(population, key=self.fitness)
         self.apply_solution(best_solution)
 
-        # Logga slutet av körningen
-        self.log_progress(-1, best_fitness, mean_fitness, run_id=run_id)
+        self.log_progress(-1, best_fitness, mean_fitness, run_id=run_id, log_window=log_window)
+
+        if log_window:
+            log_window.append_log(f"Optimization completed for run_id: {run_id}")
 
         return stats, best_solution
 
@@ -201,30 +201,28 @@ class Optimizer:
         print(f"Totala Straffavgifter: {total_penalty}")
         print(f"Actual total profit: {total_profit + total_penalty}")
 
-    def log_progress(self, generation, best_fitness, mean_fitness, run_id):
-        """Logga varje generations framgångar med löpande körnings-ID."""
-        # Om första generationen, lägg till en separator
+    def log_progress(self, generation, best_fitness, mean_fitness, run_id, log_window=None):
+        """Loggar progress mellan generationer. Hade andra saker som paket nummer osv men kände att fitness gav tillräcklig info"""
         if generation == 0:
             header = f"\n{'=' * 20} Start of Run {run_id} {'=' * 20}\n"
             with open(self.log_file, "a", encoding="utf-8") as log_file:
                 log_file.write(header)
 
-        # Logga varje generation
-        if generation >= 0:
-            log_message = (
-                f"Generation: {generation}, "
-                f"Best Fitness: {best_fitness:.2f}, "
-                f"Mean Fitness: {mean_fitness:.2f}\n"
-            )
-            with open(self.log_file, "a", encoding="utf-8") as log_file:
-                log_file.write(log_message)
+        log_message = (
+            f"Generation: {generation}, "
+            f"Best Fitness: {best_fitness:.2f}, "
+            f"Mean Fitness: {mean_fitness:.2f}\n"
+        )
+        with open(self.log_file, "a", encoding="utf-8") as log_file:
+            log_file.write(log_message)
 
-        # Vid slutet av körningen, skriv en slutlig separator
-        if generation == -1:  # Indikera slutet av körningen
+        if generation == -1: 
             footer = f"{'=' * 20} End of Run {run_id} {'=' * 20}\n"
             with open(self.log_file, "a", encoding="utf-8") as log_file:
                 log_file.write(footer)
 
+        if log_window:
+            log_window.append_log(log_message)
 
     def analyze_solution(self):
         """Analysera och visualisera fördelningen av vikt och förtjänst."""
@@ -232,10 +230,6 @@ class Optimizer:
         truck_profits = [truck.get_total_profit() for truck in self.trucks]
 
         visualize_histogram(truck_weights, truck_profits)
-
-        print("--- Statistik för Lastbilar ---")
-        print(f"Medelvikt: {np.mean(truck_weights):.2f}, Varians: {np.var(truck_weights):.2f}, Std Avvikelse: {np.std(truck_weights):.2f}")
-        print(f"Medelförtjänst: {np.mean(truck_profits):.2f}, Varians: {np.var(truck_profits):.2f}, Std Avvikelse: {np.std(truck_profits):.2f}")
 
     def export_truck_details(self, file_name="truck_details.txt"):
         """Exportera detaljer om varje lastbil och dess paket till en textfil."""

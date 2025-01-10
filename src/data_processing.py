@@ -28,17 +28,14 @@ def validate_data(packages):
     return True, "Validation done"
 
 def save_results(optimizer, result_dir, timestamp):
-    """
-    Save optimization results and truck details to files.
-    
-    Args:
-        optimizer (Optimizer): The optimizer instance containing the results.
-        result_dir (str): The directory to save the results.
-        timestamp (str): Timestamp for naming the result files.
-    """
+    """Spara resultat från optimering till filer i resultat mappen."""
     os.makedirs(result_dir, exist_ok=True)
 
-    # Save optimization results
+    delivered_packages = {p for truck in optimizer.trucks for p in truck.packages}
+    leftover_packages = [p for p in optimizer.packages if p not in delivered_packages]
+    total_leftover_profit = sum(p.profit for p in leftover_packages)
+    total_leftover_penalty = sum(p.calculate_penalty() for p in leftover_packages)
+
     result_file = os.path.join(result_dir, f"{timestamp}_results.txt")
     with open(result_file, "w", encoding="utf-8") as file:
         total_profit = sum(truck.get_total_profit() for truck in optimizer.trucks)
@@ -48,12 +45,14 @@ def save_results(optimizer, result_dir, timestamp):
         file.write("\n--- Resultat för Optimering ---\n")
         for truck in optimizer.trucks:
             file.write(str(truck) + "\n")
-        file.write(f"\nTotalt antal paket kvar i lager: {len(optimizer.packages) - sum(len(truck.packages) for truck in optimizer.trucks)}\n")
+        file.write(f"\nTotalt antal paket kvar i lager: {len(leftover_packages)}\n")
+        file.write(f"Total Förtjänst (paket i lager): {total_leftover_profit}\n")
+        file.write(f"Totala Straffavgifter (paket i lager): {total_leftover_penalty}\n")
         file.write(f"Total Förtjänst (levererade paket): {total_profit}\n")
-        file.write(f"Totala Straffavgifter: {total_penalty}\n")
-        file.write(f"Actual total profit: {total_profit + total_penalty}\n")
+        file.write(f"Totala Straffavgifter (levererade paket): {total_penalty}\n")
+        file.write(f"Total förtjänst för levererade paket: "
+                   f"{total_profit + total_penalty}\n")
 
-    # Save truck details
     truck_details_file = os.path.join(result_dir, f"{timestamp}_truck_details.txt")
     optimizer.export_truck_details(truck_details_file)
 

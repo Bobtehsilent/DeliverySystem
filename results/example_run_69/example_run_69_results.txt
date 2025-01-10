@@ -1,0 +1,19 @@
+
+--- Resultat för Optimering ---
+Truck(Truck_1, Total Weight: 799.50, Packages: 248, Total Profit: 1188.00)
+Truck(Truck_2, Total Weight: 798.20, Packages: 232, Total Profit: 1099.00)
+Truck(Truck_3, Total Weight: 799.90, Packages: 232, Total Profit: 1092.00)
+Truck(Truck_4, Total Weight: 799.70, Packages: 225, Total Profit: 1089.00)
+Truck(Truck_5, Total Weight: 796.50, Packages: 246, Total Profit: 1218.00)
+Truck(Truck_6, Total Weight: 799.80, Packages: 220, Total Profit: 1065.00)
+Truck(Truck_7, Total Weight: 798.60, Packages: 222, Total Profit: 992.00)
+Truck(Truck_8, Total Weight: 799.80, Packages: 203, Total Profit: 938.00)
+Truck(Truck_9, Total Weight: 797.60, Packages: 212, Total Profit: 992.00)
+Truck(Truck_10, Total Weight: 799.70, Packages: 217, Total Profit: 927.00)
+
+Totalt antal paket kvar i lager: 7743
+Total Förtjänst (paket i lager): 37580.0
+Totala Straffavgifter (paket i lager): -9950.0
+Total Förtjänst (levererade paket): 10600.0
+Totala Straffavgifter (levererade paket): -957.0
+Total förtjänst för levererade paket: 9643.0

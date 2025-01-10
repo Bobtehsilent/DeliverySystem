@@ -2,7 +2,8 @@ import csv
 import random
 from pathlib import Path
 
-def seed_packages(n_iter: int = 10000, target_path: Path = Path('data/lagerstatus.csv')) -> None:
+def seed_packages(n_iter: int = 100, target_path: Path = Path('data/lagerstatus.csv')) -> None:
+    """En seeder för att skapa mina egna filer med data. SNODD AV DANIEL"""
     assert 0 < n_iter, 'n_iter needs to be a positive integer'
     assert n_iter < 9_000_000_000, 'n_iter needs to be less than 9 billion'
 
