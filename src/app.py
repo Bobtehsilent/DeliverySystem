@@ -292,6 +292,8 @@ def view_results():
 
 def create_gui():
     """Skapar main GUI för applikationen."""
+    if not os.path.exists(DATA_DIR):
+        os.makedirs(DATA_DIR)
     root = tk.Tk()
     root.title("Delivery Optimization App")
     root.geometry("800x400")
