@@ -1,4 +1,4 @@
-from src import main
+from src.app import create_gui
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    create_gui()
