@@ -1,0 +1,10 @@
+*__pycache__/
+env/
+.env/
+venv/
+.venv/
+lagerstatus.csv
+test_data.csv
+test.py
+logs/
+run_*/
