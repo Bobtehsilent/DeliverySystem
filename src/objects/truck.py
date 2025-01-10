@@ -29,4 +29,4 @@ class Truck:
         self.packages.sort(key=lambda p: p.priority_score(), reverse=True)
 
     def __repr__(self):
-        return f"Truck({self.id}, Total Weight: {self.get_total_weight():.1f}, Packages: {len(self.packages)})"
+        return f"Truck({self.id}, Total Weight: {self.get_total_weight():.2f}, Packages: {len(self.packages)}, Total Profit: {self.get_total_profit():.2f})"

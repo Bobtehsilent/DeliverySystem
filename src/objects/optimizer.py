@@ -4,9 +4,15 @@ import numpy as np
 from src.objects.truck import Truck
 from src.objects.package import Package
 from src.visualization import visualize_histogram, visualize_fitness
+import os
+import sys
+import time
 
+base_dir = os.path.abspath("..") 
+sys.path.append(base_dir)  
+log_file = os.path.join(base_dir, "logs", "optimization.log")
 class Optimizer:
-    def __init__(self, packages, max_trucks=10, max_capacity=800, log_file="logs/optimization.log"):
+    def __init__(self, packages, max_trucks=10, max_capacity=800, log_file=log_file):
         self.packages = sorted(packages, key=lambda p: (p.profit / p.weight, p.deadline), reverse=True)
         self.max_trucks = max_trucks
         self.max_capacity = max_capacity
@@ -54,7 +60,7 @@ class Optimizer:
         # Diversitetskomponent: straffa lösningar där samma paket används ofta
         diversity_score = len(set(delivered_packages)) / len(delivered_packages) if delivered_packages else 0
 
-        return total_profit - total_penalty + 0.1 * diversity_score  # Justera faktorn 0.1 vid behov
+        return (total_profit - total_penalty + 0.1 * diversity_score)  # Justera faktorn 0.1 vid behov
 
     def select_parents(self, population):
         """Välj föräldrar med turneringsmetod för lägre selektionspress."""
@@ -113,11 +119,16 @@ class Optimizer:
             if random.random() < mutation_rate:
                 random.shuffle(truck_packages)
 
-    def optimize(self, population_size=10, generations=50, mutation_rate=0.1):
-        """Genetisk algoritm med elitism."""
+    def optimize(self, population_size=10, generations=50, initial_mutation_rate=0.05, patience=5, mutation_increase=0.05):
+        """Genetisk algoritm med elitism och stoppkriterium för stagnation och dynamisk mutation."""
+        run_id = random.randint(1, 9999)  # Generera unikt run_id här
         population = self.initialize_population(population_size)
         stats = []
         best_solution = None
+        stagnation_counter = 0  # Räknare för generationer utan förbättring
+        last_best_fitness = None  # Senast observerade bästa fitness
+        last_mean_fitness = None  # Senast observerade genomsnittliga fitness
+        mutation_rate = initial_mutation_rate  # Startvärde för mutation rate
 
         for generation in range(generations):
             population = self.select_parents(population)
@@ -130,14 +141,38 @@ class Optimizer:
                 new_population.extend([child1, child2])
             population = new_population[:population_size]
 
+            # Beräkna fitness
             best_fitness = max(self.fitness(ind) for ind in population)
             mean_fitness = np.mean([self.fitness(ind) for ind in population])
             stats.append((generation, best_fitness, mean_fitness))
 
-            self.log_progress(generation, best_fitness, mean_fitness)
+            # Logga framgång
+            self.log_progress(generation, best_fitness, mean_fitness, run_id=run_id)
 
+            # Kontrollera om fitness har stagnerat
+            if best_fitness == last_best_fitness:
+                stagnation_counter += 1
+                if stagnation_counter >= patience:
+                    mutation_rate += mutation_increase  # Öka mutation rate
+                    stagnation_counter = 0  # Återställ räknaren
+            else:
+                stagnation_counter = 0  # Återställ räknaren vid förbättring
+                mutation_rate = initial_mutation_rate  # Återställ mutation rate vid förändring
+
+            last_best_fitness = best_fitness
+            last_mean_fitness = mean_fitness
+
+            # Stoppkriterium: Avbryt om maximal generationsgräns uppnås
+            if stagnation_counter >= patience:
+                print(f"Optimeringen stoppas vid generation {generation} efter {patience} generationer av stagnation.")
+                break
+
+        # Hitta och applicera bästa lösningen
         best_solution = max(population, key=self.fitness)
         self.apply_solution(best_solution)
+
+        # Logga slutet av körningen
+        self.log_progress(-1, best_fitness, mean_fitness, run_id=run_id)
 
         return stats, best_solution
 
@@ -162,15 +197,30 @@ class Optimizer:
         print(f"Totala Straffavgifter: {total_penalty}")
         print(f"Actual total profit: {total_profit + total_penalty}")
 
-    def log_progress(self, generation, best_fitness, mean_fitness):
-        """Logga varje generations framgångar."""
-        log_message = (
-            f"Generation: {generation}, "
-            f"Best Fitness: {best_fitness:.2f}, "
-            f"Mean Fitness: {mean_fitness:.2f}\n"
-        )
-        with open(self.log_file, "a", encoding="utf-8") as log_file:
-            log_file.write(log_message)
+    def log_progress(self, generation, best_fitness, mean_fitness, run_id):
+        """Logga varje generations framgångar med löpande körnings-ID."""
+        # Om första generationen, lägg till en separator
+        if generation == 0:
+            header = f"\n{'=' * 20} Start of Run {run_id} {'=' * 20}\n"
+            with open(self.log_file, "a", encoding="utf-8") as log_file:
+                log_file.write(header)
+
+        # Logga varje generation
+        if generation >= 0:
+            log_message = (
+                f"Generation: {generation}, "
+                f"Best Fitness: {best_fitness:.2f}, "
+                f"Mean Fitness: {mean_fitness:.2f}\n"
+            )
+            with open(self.log_file, "a", encoding="utf-8") as log_file:
+                log_file.write(log_message)
+
+        # Vid slutet av körningen, skriv en slutlig separator
+        if generation == -1:  # Indikera slutet av körningen
+            footer = f"{'=' * 20} End of Run {run_id} {'=' * 20}\n"
+            with open(self.log_file, "a", encoding="utf-8") as log_file:
+                log_file.write(footer)
+
 
     def analyze_solution(self):
         """Analysera och visualisera fördelningen av vikt och förtjänst."""
